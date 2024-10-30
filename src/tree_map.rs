@@ -1,6 +1,5 @@
 /*
 Author: Matthew Tindley
-Date: 30/10/2024
 
 Summary:
     The internal tree_map module contains defenitions for a basic, unoptimised tree map stucture

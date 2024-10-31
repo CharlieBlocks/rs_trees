@@ -20,11 +20,11 @@ pub struct DynamicArray {
 
 
 /* Implementation */
-impl Dynamicarray {
+impl DynamicArray {
 
     // Creates a new DynamicArray type
     // This function allocates raw memory
-    fn new(layout: Layout) -> Self {
+    pub fn new(layout: Layout) -> Self {
         unsafe {
             DynamicArray {
                 mem: alloc(layout),
@@ -34,13 +34,13 @@ impl Dynamicarray {
     }
 
     // Takes memory from the offset and casts it into T
-    fn get<T>(&self, offset: usize) -> &T {
+    pub fn get<T>(&self, offset: usize) -> &T {
         unsafe {
             return &(*self.mem.offset(offset as isize).cast::<T>());
         }
     }
     // Same as get but mutable
-    fn get_mut<T>(&self, offset: usize) -> &mut T {
+    pub fn get_mut<T>(&self, offset: usize) -> &mut T {
         unsafe {
             return &mut (*self.mem.offset(offset as isize).cast::<T>());
         }

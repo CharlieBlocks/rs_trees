@@ -1,4 +1,6 @@
 mod tree_map;
+mod dynamic_array;
+mod static_tree;
 use tree_map::*;
 
 fn main() {

@@ -133,7 +133,7 @@ impl<T, Idx: PartialEq + Clone> TreeNode<T, Idx> {
     /* Internal Methods */
     // Finds a requested node in the nodes list
     // Returns None if the node doesn't exist
-    fn find_node(&self, key: &Idx) -> Option<&TreeNode<T, Idx>> {
+    pub fn find_node(&self, key: &Idx) -> Option<&TreeNode<T, Idx>> {
         // Iterate over the self.nodes vector
         for node in &self.nodes {
             if node.key == *key { // Check if key matches

@@ -10,20 +10,21 @@ Summary:
 */
 
 use crate::dynamic_array::DynamicArray;
+use std::{alloc::Layout, fmt::Debug};
 
 // TreeOffset is an i32 index into the DynamicArray structure in the StaticTree
 // It is used to specify the offset to find an item
 type TreeOffset = i32;
 
-pub struct TreeNode<T, Idx: PartialEq + Clone> {
-    key: Idx,
-    value: Option<T>,
-    list_head: TreeOffset
+pub struct TreeNode<T, Idx: PartialEq> {
+    pub key: Idx,
+    pub value: Option<T>,
+    pub list_head: TreeOffset
 }
 
 pub struct TreeBranch {
-    node: TreeOffset,
-    next: TreeOffset
+    pub node: TreeOffset,
+    pub next: TreeOffset
 }
 
 // The readonly static tree
@@ -32,10 +33,22 @@ pub struct StaticTree {
     pool: DynamicArray
 }
 
+pub static TREE_BRANCH_SIZE: i32 = std::mem::size_of::<TreeBranch>() as i32;
 
 
 /* Implementation */
 impl StaticTree {
+
+    pub fn new(size: usize) -> Self {
+        StaticTree {
+            pool: DynamicArray::new(Layout::from_size_align(size, 1).unwrap())
+        }
+    }
+
+    #[inline]
+    pub fn raw(&self) -> &DynamicArray {
+        return &self.pool;
+    }
 
     // Looks up a key in the static tree
     // Returns a reference to it if it exists
@@ -91,4 +104,26 @@ impl StaticTree {
         }
     }
 
+}
+
+
+
+// Debugging Implementations
+impl std::fmt::Debug for TreeBranch {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Branch")
+            .field("node", &self.node)
+            .field("next", &self.next)
+            .finish()
+    }
+}
+
+impl<T: Debug, Idx: PartialEq + Debug> std::fmt::Debug for TreeNode<T, Idx> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Node")
+            .field("key", &self.key)
+            .field("value", &self.value)
+            .field("list_heda", &self.list_head)
+            .finish()
+    }
 }

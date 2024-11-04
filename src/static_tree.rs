@@ -10,7 +10,7 @@ Summary:
 */
 
 use crate::dynamic_array::DynamicArray;
-use std::{alloc::Layout, fmt::Debug, thread::current};
+use std::{alloc::Layout, fmt::Debug};
 
 // TreeOffset is an i32 index into the DynamicArray structure in the StaticTree
 // It is used to specify the offset to find an item
@@ -57,9 +57,8 @@ impl StaticTree {
 
         // State variables
         // Note that the tree is constructed with an implicit root node
-        // We skip straight to the branches undernath the node
+        // We skip straight to the branches undernath the imaginary node 
         let mut current_branch: Option<&TreeBranch> = Some(self.pool.get(0)); // Get first branch
-        //let mut current_node: Option<&TreeNode<T, Idx>> = None;
         let mut keychain_idx = 0;
 
         loop {
@@ -68,7 +67,7 @@ impl StaticTree {
 
             // Check if the node matches the index
             // If the node matches then disable the is_branch flag. The current_node state is already set. We can slice off the first item in the keychain
-            if current_node.key != index[keychain_idx] {
+            if current_node.key != index[keychain_idx] { // Optimise with hashing?
                 if current_branch.unwrap().next == -1 { return None; } // Null check
 
                 current_branch = Some(self.pool.get(current_branch.unwrap().next as usize));
@@ -88,7 +87,6 @@ impl StaticTree {
             current_branch = Some(self.pool.get(current_node.list_head as usize));
         }
     }
-
 }
 
 

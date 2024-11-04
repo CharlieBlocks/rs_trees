@@ -74,6 +74,7 @@ impl<T, Idx: PartialEq + Clone> CountedTreeNode<T, Idx> {
 
 
     /* Helper Nodes */
+    #[allow(dead_code)] // Left here for future reference
     pub fn find_node(&self, key: &Idx) -> Option<&CountedTreeNode<T, Idx>> {
         for node in &self.nodes {
             if node.key == *key {

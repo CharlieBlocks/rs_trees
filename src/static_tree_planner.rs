@@ -9,7 +9,6 @@ Summary:
 */
 
 
-use std::collections::vec_deque;
 use std::collections::VecDeque;
 
 use crate::static_tree::*;
@@ -97,7 +96,6 @@ impl<T, Idx: PartialEq + Clone + Default> StaticTreePlanner<T, Idx> {
                 pool_node.value = node.value.take();
 
                 // Get the parent branch and set the node it points to
-                println!("{}", last_branch_offset);
                 tree.raw().get_mut::<TreeBranch>(last_branch_offset as usize).node = pool_offset;
                 pool_offset += std::mem::size_of::<TreeNode<T, Idx>>() as i32; // Increment pool_offset to the beginning of the next branch
 

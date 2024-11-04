@@ -66,5 +66,6 @@ fn main() {
     println!("Results:");
     println!("\tBasic Map - Total: {}ms, Per: {}ns", t1.as_millis(), t1.as_nanos() / BENCHMARK_IT as u128);
     println!("\tStatic Map - Total: {}ms, Per: {}ns", t2.as_millis(), t2.as_nanos() / BENCHMARK_IT as u128);
+    println!("\t{:.4}x", (t1.as_nanos() as f64 / BENCHMARK_IT as f64) / (t2.as_nanos() as f64 / BENCHMARK_IT as f64));
 
 }

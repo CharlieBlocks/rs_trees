@@ -22,6 +22,10 @@ pub struct TreeNode<T, Idx: PartialEq> {
     pub list_head: TreeOffset
 }
 
+// OPTIMISATION //
+// Move the number of TreeBranches into the TreeNode
+// Then drop the next attribute on TreeBranch
+// Should reduce memory usage and increase lookup speed
 pub struct TreeBranch {
     pub node: TreeOffset,
     pub next: TreeOffset

@@ -101,10 +101,10 @@ impl<T, Idx: PartialEq + Clone> PartialEq for CountedTreeNode<T, Idx> {
 impl<T, Idx: PartialEq + Clone> Eq for CountedTreeNode<T, Idx> { }
 impl<T, Idx: PartialEq + Clone> PartialOrd for CountedTreeNode<T, Idx> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        if self.idx_counts < other.idx_counts { // Backwards ordering so that the items are sorted in reverse
+        if self.idx_counts > other.idx_counts { // Backwards ordering so that the items are sorted in reverse
             return Some(std::cmp::Ordering::Greater);
         }
-        else if self.idx_counts > other.idx_counts {
+        else if self.idx_counts < other.idx_counts {
             return Some(std::cmp::Ordering::Less);
         };
 
@@ -113,10 +113,10 @@ impl<T, Idx: PartialEq + Clone> PartialOrd for CountedTreeNode<T, Idx> {
 }
 impl<T, Idx: PartialEq + Clone> Ord for CountedTreeNode<T, Idx> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        if self.idx_counts < other.idx_counts { // Backwards ordering
+        if self.idx_counts > other.idx_counts { // Backwards ordering
             return std::cmp::Ordering::Greater;
         }
-        else if self.idx_counts > other.idx_counts {
+        else if self.idx_counts < other.idx_counts {
             return std::cmp::Ordering::Less;
         };
 

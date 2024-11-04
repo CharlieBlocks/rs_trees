@@ -10,7 +10,7 @@ Summary:
 */
 
 use crate::dynamic_array::DynamicArray;
-use std::{alloc::Layout, fmt::Debug};
+use std::{alloc::Layout, fmt::Debug, thread::current};
 
 // TreeOffset is an i32 index into the DynamicArray structure in the StaticTree
 // It is used to specify the offset to find an item
@@ -58,49 +58,34 @@ impl StaticTree {
         // State variables
         // Note that the tree is constructed with an implicit root node
         // We skip straight to the branches undernath the node
-        let mut is_branch = true;
         let mut current_branch: Option<&TreeBranch> = Some(self.pool.get(0)); // Get first branch
-        let mut current_node: Option<&TreeNode<T, Idx>> = None;
-        let mut keychain = index;
+        //let mut current_node: Option<&TreeNode<T, Idx>> = None;
+        let mut keychain_idx = 0;
 
         loop {
+            // Check current branch
+            let current_node: &TreeNode<T, Idx> = self.pool.get(current_branch.unwrap().node as usize);
 
-            // Handle looping over branches
-            if is_branch {
-                // Check current branch
-                current_node = Some(self.pool.get(current_branch.unwrap().node as usize));
+            // Check if the node matches the index
+            // If the node matches then disable the is_branch flag. The current_node state is already set. We can slice off the first item in the keychain
+            if current_node.key != index[keychain_idx] {
+                if current_branch.unwrap().next == -1 { return None; } // Null check
 
-                // Check if the node matches the index
-                // If the node matches then disable the is_branch flag. The current_node state is already set. We can slice off the first item in the keychain
-                if current_node.unwrap().key == keychain[0] {
-                    keychain = &keychain[1..];
-                    is_branch = false;
-                }
-                else { // Otherwise we step to the next branch
-                    if current_branch.unwrap().next == -1 { return None; } // Null check
-                    
-                    // Set branch
-                    current_branch = Some(self.pool.get(current_branch.unwrap().next as usize));
-                }
-
-                continue; // Skip back to top of loop
+                current_branch = Some(self.pool.get(current_branch.unwrap().next as usize));
+                continue; // Return to top of loop
             }
 
-            // Otherwise we must be at a TreeNode<T, Idx> type
-            // First check if we have any items left in the keychain
-            if keychain.len() == 0 {
-                return current_node.unwrap().value.as_ref();
+            keychain_idx += 1;
+            if keychain_idx == index.len() { // Reached end of index 
+                return current_node.value.as_ref();
             }
 
-            // Check if we have a node
-            if current_node.unwrap().list_head == -1 {
-                return None;
+            // Not found
+            if current_node.list_head == -1 {
+                return None
             }
 
-
-            // Otherwise begin traversing the branch
-            current_branch = Some(self.pool.get(current_node.unwrap().list_head as usize));
-            is_branch = true;
+            current_branch = Some(self.pool.get(current_node.list_head as usize));
         }
     }
 

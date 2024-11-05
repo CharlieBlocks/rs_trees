@@ -38,7 +38,13 @@ pub struct StaticTree {
 }
 
 pub static TREE_BRANCH_SIZE: i32 = std::mem::size_of::<TreeBranch>() as i32;
-
+fn hash_str(s: &str) -> i32 {
+    let mut acc = 1;
+    for c in s.chars() {
+        acc = acc * c as i32;
+    }
+    return acc;
+}
 
 /* Implementation */
 impl StaticTree {
@@ -57,24 +63,25 @@ impl StaticTree {
     // Looks up a key in the static tree
     // Returns a reference to it if it exists
     // Otherwise returns none
-    pub fn find<T, Idx: 'static + PartialEq + Clone>(&self, index: &[Idx]) -> Option<&T> {
+    #[inline]
+    pub fn find<T, Idx: 'static + PartialEq + Clone>(&self, index: &[&str]) -> Option<&T> {
 
         // State variables
         // Note that the tree is constructed with an implicit root node
         // We skip straight to the branches undernath the imaginary node 
-        let mut current_branch: Option<&TreeBranch> = Some(self.pool.get(0)); // Get first branch
+        let mut current_branch: &TreeBranch = self.pool.get(0); // Get first branch
         let mut keychain_idx = 0;
 
         loop {
             // Check current branch
-            let current_node: &TreeNode<T, Idx> = self.pool.get(current_branch.unwrap().node as usize);
+            let current_node: &TreeNode<T, i32> = self.pool.get(current_branch.node as usize);
 
             // Check if the node matches the index
             // If the node matches then disable the is_branch flag. The current_node state is already set. We can slice off the first item in the keychain
-            if current_node.key != index[keychain_idx] { // Optimise with hashing?
-                if current_branch.unwrap().next == -1 { return None; } // Null check
+            if current_node.key != hash_str(index[keychain_idx]) { // Optimise with hashing?
+                if current_branch.next == -1 { return None; } // Null check
 
-                current_branch = Some(self.pool.get(current_branch.unwrap().next as usize));
+                current_branch = self.pool.get(current_branch.next as usize);
                 continue; // Return to top of loop
             }
 
@@ -88,7 +95,7 @@ impl StaticTree {
                 return None
             }
 
-            current_branch = Some(self.pool.get(current_node.list_head as usize));
+            current_branch = self.pool.get(current_node.list_head as usize);
         }
     }
 }

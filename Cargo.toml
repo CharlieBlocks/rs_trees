@@ -1,11 +1,10 @@
 [package]
-name = "static_tree"
-version = "0.1.0"
+name = "rs_trees"
+version = "0.1.1"
 edition = "2021"
 
-[dependencies]
+[lib]
+name = "rs_trees"
+path = "src/lib.rs"
 
 
-[profile.release-with-sym]
-inherits = "release"
-debug = true

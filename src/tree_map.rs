@@ -190,3 +190,85 @@ impl<T, Idx: PartialEq + Clone + Default> TreeMap<T, Idx> {
         return self.head.find(index);
     }
 }
+
+
+
+
+/*
+Tests:
+    - TreeMap::insert
+    - TreeMap::find     On valid target (Return Some)
+    - TreeMap::find     On invalid target (Return None)
+
+
+*/
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /*
+    Test: Insert
+
+    Summary:
+        This test is to ensure that TreeMAp<i32, &str> can correctly insert elements without panicing.
+        It does not check that the elemnt has been inserted correctly
+     */
+    #[test]
+    fn insert() {
+        let mut map: TreeMap<i32, &str> = TreeMap::new();
+
+        // Check insert
+        map.insert(vec!["a", "b", "c"].as_slice(), 1);
+
+        // Check insert along created path
+        map.insert(vec!["a", "b", "d"].as_slice(), 1);
+
+        // Insert along new path
+        map.insert(vec!["e", "f"].as_slice(), 1);
+
+        // Long insert
+        map.insert(vec!["e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p"].as_slice(), 1);
+    }
+
+
+    /*
+    Test: Find
+
+    Summary:
+        Validates that TreeMap can correctly read back inserted elements
+     */
+    #[test]
+    fn find() {
+        let mut map: TreeMap<i32, &str> = TreeMap::new();
+
+        map.insert(vec!["a", "b", "c"].as_slice(), 1);
+        map.insert(vec!["a", "b", "d"].as_slice(), 2);
+        map.insert(vec!["e", "f"].as_slice(), 3);
+
+
+        // Check response
+        assert_eq!(*map.find(vec!["a", "b", "c"].as_slice()).unwrap(), 1);
+        assert_eq!(*map.find(vec!["a", "b", "d"].as_slice()).unwrap(), 2);
+        assert_eq!(*map.find(vec!["e", "f"].as_slice()).unwrap(), 3);
+    }
+
+
+    /*
+    Test: Find Invalid items
+
+    Summary:
+        Validates that TreeMap will error correctly when find is called on an unknown index
+     */
+    #[test]
+    fn find_invalid() {
+        let mut map: TreeMap<i32, &str> = TreeMap::new();
+        map.insert(vec!["a", "b", "c"].as_slice(), 1);
+
+        // Wrong from root
+        assert_eq!(map.find(vec!["e", "f"].as_slice()).is_none(), true);
+
+        // Wrong along index
+        assert_eq!(map.find(vec!["a", "b", "z"].as_slice()).is_none(), true);
+    }
+
+}

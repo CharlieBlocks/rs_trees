@@ -108,3 +108,34 @@ impl<T: Debug, Idx: PartialEq + Debug> std::fmt::Debug for TreeNode<T, Idx> {
             .finish()
     }
 }
+
+
+
+/*
+Tests:
+    - Find
+*/
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::StaticTreePlanner;
+
+    #[test]
+    fn find() {
+        let mut plan: StaticTreePlanner<i32, &str> = StaticTreePlanner::new();
+        plan = plan.add(vec!["a", "b", "c"].as_slice(), 1);
+        plan = plan.add(vec!["a", "b", "d"].as_slice(), 2);
+        plan = plan.add(vec!["e"].as_slice(), 3);
+        let tree: StaticTree = plan.compile();
+
+
+        // Check valid lookups
+        assert_eq!(*tree.find::<i32, &str>(vec!["a", "b", "c"].as_slice()).unwrap(), 1);
+        assert_eq!(*tree.find::<i32, &str>(vec!["a", "b", "d"].as_slice()).unwrap(), 2);
+        assert_eq!(*tree.find::<i32, &str>(vec!["e"].as_slice()).unwrap(), 3);
+
+        // Check invalid lookups
+        assert!(tree.find::<i32, &str>(vec!["g", "h"].as_slice()).is_none());
+    }
+
+}

@@ -100,9 +100,10 @@ impl<T, Idx: PartialEq + Clone + Default> StaticTreePlanner<T, Idx> {
                 // Set the list_offset of the node
                 // This is used to compute the branch offsets later
                 node.list_offset = pool_offset;
+                    
 
-                // Set previous TreeNode::list_head value
-                tree.raw().get_mut::<TreeNode<T, Idx>>(last_branch_offset as usize).list_head = pool_offset;
+                // Set previous TreeNode::list_head value 
+                if node.nodes.len() > 0 { tree.raw().get_mut::<TreeNode<T, Idx>>(last_branch_offset as usize).list_head = pool_offset; }
 
                 // Create branches by looping over nodes
                 for i in 0..node.nodes.len() {
@@ -173,6 +174,70 @@ impl<T, Idx: PartialEq + Clone + Default> StaticTreePlanner<T, Idx> {
         println!("Calcultaed node count: {}", node_count);
         return node_count * std::mem::size_of::<TreeNode<T, Idx>>();
 
+    }
+
+}
+
+
+
+
+/*
+Tests:
+    - Compile
+
+Note: StaticTreePlanner::add is skipped as it is a passthrough to the CountedTreeMap below it
+*/
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Helper function for checking that a given TreeNode is valid
+    fn check_node(node: &TreeNode<i32, &str>, key: &str, value: Option<i32>, list_length: i32, list_head: i32) -> bool {
+        return node.key == key &&
+            node.value == value &&
+            node.list_length == list_length &&
+            node.list_head == list_head;
+    }
+
+    /*
+    Test: Compile
+
+    Summary:
+        Checks that calling Compile on a StaticTreePlanner creates the expected raw memory structure
+     */
+    #[test]
+    fn compile() {
+        let mut plan: StaticTreePlanner<i32, &str> = StaticTreePlanner::new();
+        
+        plan = plan.add(vec!["a", "b", "c"].as_slice(), 1);
+        plan = plan.add(vec!["a", "b", "d"].as_slice(), 2);
+        plan = plan.add(vec!["e"].as_slice(), 3);
+
+        // Should complete without panicing
+        let tree = plan.compile();
+
+
+        // Check structure
+        // We're not checking the StaticTree::find method here
+        // Just the underlying memory structure
+
+        // Root Node
+        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(0), "", None, 2, 32));
+
+        // "a"
+        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(32), "a", None, 1, 96));
+
+        // "e"
+        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(64), "e", Some(3), 0, -1));
+        
+        // "b"
+        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(96), "b", None, 2, 128));
+
+        // "c"
+        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(128), "c", Some(1), 0, -1));
+
+        // "d"
+        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(160), "d", Some(2), 0, -1));
     }
 
 }

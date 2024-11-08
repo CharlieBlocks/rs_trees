@@ -106,10 +106,10 @@ impl<T, Idx: PartialEq + Clone> PartialEq for CountedTreeNode<T, Idx> {
 impl<T, Idx: PartialEq + Clone> Eq for CountedTreeNode<T, Idx> { }
 impl<T, Idx: PartialEq + Clone> PartialOrd for CountedTreeNode<T, Idx> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        if self.idx_counts > other.idx_counts { // Backwards ordering so that the items are sorted in reverse
+        if self.idx_counts < other.idx_counts { // Backwards ordering so that the items are sorted in reverse
             return Some(std::cmp::Ordering::Greater);
         }
-        else if self.idx_counts < other.idx_counts {
+        else if self.idx_counts > other.idx_counts {
             return Some(std::cmp::Ordering::Less);
         };
 
@@ -118,10 +118,10 @@ impl<T, Idx: PartialEq + Clone> PartialOrd for CountedTreeNode<T, Idx> {
 }
 impl<T, Idx: PartialEq + Clone> Ord for CountedTreeNode<T, Idx> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        if self.idx_counts > other.idx_counts { // Backwards ordering
+        if self.idx_counts < other.idx_counts { // Backwards ordering
             return std::cmp::Ordering::Greater;
         }
-        else if self.idx_counts < other.idx_counts {
+        else if self.idx_counts > other.idx_counts {
             return std::cmp::Ordering::Less;
         };
 
@@ -167,4 +167,72 @@ impl<T, Idx: PartialEq + Clone + Default> Default for CountedTreeMap<T, Idx> {
             head: None
         }
     }
+}
+
+
+
+
+/*
+Tests:
+    - Insert
+    - Sort
+*/
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /*
+    Test: Insert
+
+    Summary:
+        Check that inserting values works correctly
+     */
+    #[test]
+    fn insert() {
+        let mut map: CountedTreeMap<i32, &str> = CountedTreeMap::new();
+
+        // Check insert
+        map.insert(vec!["a", "b", "c"].as_slice(), 1);
+
+        // Check insert along created path
+        map.insert(vec!["a", "b", "d"].as_slice(), 1);
+
+        // Insert along new path
+        map.insert(vec!["e", "f"].as_slice(), 1);
+
+        // Long insert
+        map.insert(vec!["e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p"].as_slice(), 1);
+    }
+
+
+    /*
+    Test: Sort
+
+    Summary:
+        Sorts the nodes. This should happen without panicing
+        Go through a couple of nodes and check that they have the correct counts
+     */
+    #[test]
+    fn sort() {
+        let mut map: CountedTreeMap<i32, &str> = CountedTreeMap::new();
+        map.insert(vec!["a", "b", "c"].as_slice(), 1);
+        map.insert(vec!["a", "b", "d"].as_slice(), 2);
+        map.insert(vec!["e", "f"].as_slice(), 3);
+
+        // Sort nodes
+        // Shouldn't panic
+        map.root_ref_mut().sort_nodes();
+
+        let root = map.root_ref();
+        assert_eq!(root.idx_counts, 3);
+
+        // Step down again into "a"
+        let node = root.find_node(&"a").unwrap();
+        assert_eq!(node.idx_counts, 2);
+
+        // Step down into "e"
+        let node = root.find_node(&"e").unwrap();
+        assert_eq!(node.idx_counts, 1);
+    }
+
 }

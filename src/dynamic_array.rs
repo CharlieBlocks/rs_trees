@@ -55,3 +55,24 @@ impl Drop for DynamicArray {
         }
     }
 }
+
+
+
+
+/*
+Tests:
+    - Allocate
+*/
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn allocate() {
+        // Allocate Array
+        let arr = DynamicArray::new(Layout::from_size_align(64, 1).unwrap());
+
+        // Drop Array
+        drop(arr);
+    }
+}

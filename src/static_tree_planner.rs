@@ -25,7 +25,7 @@ pub struct StaticTreePlanner<T, Idx: PartialEq + Clone + Default> {
 
 
 /* Implementation */
-impl<T, Idx: PartialEq + Clone + Default + std::fmt::Debug> StaticTreePlanner<T, Idx> {
+impl<T, Idx: PartialEq + Clone + Default> StaticTreePlanner<T, Idx> {
     // New function
     // Returns a new, blank StaticTreePlanner
     pub fn new() -> Self {
@@ -57,10 +57,11 @@ impl<T, Idx: PartialEq + Clone + Default + std::fmt::Debug> StaticTreePlanner<T,
         // This will hold the nodes that we are currently underneath
         // This specifically allows us to traverse back up the tree
         let mut stack: VecDeque<CountedTreeNode<T, Idx>> = VecDeque::new();
-        let mut pool_offset: i32 = 0;
-        let mut last_branch_offset: i32 = 0;
-        let node_size = std::mem::size_of::<TreeNode<T, Idx>>() as i32;
-        println!("Node Size: {}", node_size);
+
+        // Create state variables
+        let node_size = std::mem::size_of::<TreeNode<T, Idx>>() as i32; // Precompute
+        let mut pool_offset: i32 = node_size; // Placement of the first branch
+        let mut last_branch_offset: i32 = 0; // Offset of the current node's parent branch
 
 
         // Push root node to stack
@@ -70,15 +71,13 @@ impl<T, Idx: PartialEq + Clone + Default + std::fmt::Debug> StaticTreePlanner<T,
         stack.push_back(root);
 
 
-        // Node -> Node, Node
-        //          |
-        //          |-------- Node, Node
 
         // Write root node
         let node0 = tree.raw().get_mut::<TreeNode<T, Idx>>(0);
         node0.list_length = stack.get(0).unwrap().nodes.len() as i32;
         node0.list_head = node_size;
-        pool_offset = node_size;
+
+        // Write root subnodes
         for i in 0..stack.get(0).unwrap().nodes.len() {
             let sub_node = &mut stack.get_mut(0).unwrap().nodes[i];
             let branch = tree.raw().get_mut::<TreeNode<T, Idx>>(pool_offset as usize);
@@ -87,43 +86,55 @@ impl<T, Idx: PartialEq + Clone + Default + std::fmt::Debug> StaticTreePlanner<T,
             branch.value        = sub_node.value.take();
             branch.list_length  = sub_node.nodes.len() as i32;
             branch.list_head    = -1;
-            // sub_node.node_offset = pool_offset;
 
             pool_offset += node_size;
         }
         
+
         // Loop while there are nodes in the stack
         while let Some(mut node) = stack.pop_back() {
 
-            // Branches need creating
+            // Do branches need creating?
             if !node.visited {
-                // Set previous TreeNode::list_head value
+
+                // Set the list_offset of the node
+                // This is used to compute the branch offsets later
                 node.list_offset = pool_offset;
+
+                // Set previous TreeNode::list_head value
                 tree.raw().get_mut::<TreeNode<T, Idx>>(last_branch_offset as usize).list_head = pool_offset;
 
+                // Create branches by looping over nodes
                 for i in 0..node.nodes.len() {
                     let branch = tree.raw().get_mut::<TreeNode<T, Idx>>(pool_offset as usize);
 
+                    // Initialise branch values
                     branch.key          = node.nodes[i].key.clone();
                     branch.value        = node.nodes[i].value.take();
                     branch.list_length  = node.nodes[i].nodes.len() as i32;
                     branch.list_head    = -1;
 
+                    // Increment to next branch
                     pool_offset += node_size;
                 }
 
                 node.visited = true;
             }
 
-            // Add next child node to stack
+
+            // Get next node
+            // None this is a leaf node
+            // Some(n) there are 1 or more child nodes
             let next_node = match node.consume_next_node() {
                 Some(n) => n,
                 None => { continue; }
             };
 
-            // Set last branch offset
+
+            // Calculate last branch offset
+            // list_offset is the offset of of the node + node_size
             last_branch_offset = node.list_offset + (node_size as i32 * node.built_sub_nodes);
-            node.built_sub_nodes += 1;
+            node.built_sub_nodes += 1; // Increment the built node count. This technically happens on before the node is built as it's branches are built on the next iteration
 
 
             // Stack must have more nodes

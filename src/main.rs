@@ -5,28 +5,10 @@ mod counted_tree_map;
 mod static_tree_planner;
 use tree_map::TreeMap;
 use static_tree_planner::StaticTreePlanner;
-use static_tree::{StaticTree, TreeNode};
 
 use std::time::Instant;
-use std::hash::Hash;
 
 static BENCHMARK_IT: usize = 1_000_000;
-
-fn get_hash(s: &str) -> i32 {
-    let mut acc = 1;
-    for c in s.chars() {
-        acc = acc * c as i32;
-    }
-    return acc;
-}
-
-fn hash_vec(arr: &[&str]) -> Vec<i32> {
-    let mut out: Vec<i32> = Vec::with_capacity(arr.len());
-    for v in arr {
-        out.push(get_hash(v));
-    };
-    return out;
-}
 
 fn main() {
     // Basic Tree

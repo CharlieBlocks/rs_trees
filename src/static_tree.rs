@@ -52,7 +52,7 @@ impl StaticTree {
     // Returns a reference to it if it exists
     // Otherwise returns none
     #[inline(never)]
-    pub fn find<T, Idx: 'static + PartialEq + Clone + std::fmt::Debug>(&self, index: &[Idx]) -> Option<&T> {
+    pub fn find<T, Idx: 'static + PartialEq + Clone>(&self, index: &[Idx]) -> Option<&T> {
 
         // State variables
         let node_size = std::mem::size_of::<TreeNode<T, Idx>>();
@@ -97,6 +97,7 @@ impl StaticTree {
 
 
 // Debugging Implementations
+#[cfg(debug_assertions)]
 impl<T: Debug, Idx: PartialEq + Debug> std::fmt::Debug for TreeNode<T, Idx> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Node")

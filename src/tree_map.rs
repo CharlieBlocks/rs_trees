@@ -102,6 +102,7 @@ impl<T, Idx: PartialEq + Clone> TreeNode<T, Idx> {
     // Iterates over the tree and finds a value at the given index
     // If the value exists then a reference to it is returned
     // Otherwise None is returned
+    #[inline(never)]
     pub fn find(&self, index: &[Idx]) -> Option<&T> {
         // Check if we have consumed the whole index
         // In this case we have no more sub-nodes to iterate over

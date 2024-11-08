@@ -19,31 +19,19 @@ type TreeOffset = i32;
 pub struct TreeNode<T, Idx: PartialEq> {
     pub key: Idx,
     pub value: Option<T>,
+    pub list_length: i32,
     pub list_head: TreeOffset
 }
 
-// OPTIMISATION //
-// Move the number of TreeBranches into the TreeNode
-// Then drop the next attribute on TreeBranch
-// Should reduce memory usage and increase lookup speed
-pub struct TreeBranch {
-    pub node: TreeOffset,
-    pub next: TreeOffset
-}
+// pub struct TreeBranch {
+//     pub node: TreeOffset,
+//     pub next: TreeOffset
+// }
 
 // The readonly static tree
 // This contains a DynamicArray which contains the tree data
 pub struct StaticTree {
     pool: DynamicArray
-}
-
-pub static TREE_BRANCH_SIZE: i32 = std::mem::size_of::<TreeBranch>() as i32;
-fn hash_str(s: &str) -> i32 {
-    let mut acc = 1;
-    for c in s.chars() {
-        acc = acc * c as i32;
-    }
-    return acc;
 }
 
 /* Implementation */
@@ -63,39 +51,45 @@ impl StaticTree {
     // Looks up a key in the static tree
     // Returns a reference to it if it exists
     // Otherwise returns none
-    #[inline]
-    pub fn find<T, Idx: 'static + PartialEq + Clone>(&self, index: &[&str]) -> Option<&T> {
+    #[inline(never)]
+    pub fn find<T, Idx: 'static + PartialEq + Clone + std::fmt::Debug>(&self, index: &[Idx]) -> Option<&T> {
 
         // State variables
-        // Note that the tree is constructed with an implicit root node
-        // We skip straight to the branches undernath the imaginary node 
-        let mut current_branch: &TreeBranch = self.pool.get(0); // Get first branch
+        let node_size = std::mem::size_of::<TreeNode<T, Idx>>();
+        let mut current_node: &TreeNode<T, Idx> = self.pool.get(0);
+        let mut current_offset: i32= 0;
+        let mut branch_idx = 0;
         let mut keychain_idx = 0;
 
         loop {
-            // Check current branch
-            let current_node: &TreeNode<T, i32> = self.pool.get(current_branch.node as usize);
+            let test_node: &TreeNode<T, Idx> = self.pool.get((current_node.list_head + current_offset) as usize);
 
-            // Check if the node matches the index
-            // If the node matches then disable the is_branch flag. The current_node state is already set. We can slice off the first item in the keychain
-            if current_node.key != hash_str(index[keychain_idx]) { // Optimise with hashing?
-                if current_branch.next == -1 { return None; } // Null check
+            // Check if node matches index
+            // If not then we continue to the next node
+            if test_node.key != index[keychain_idx] {
+                if branch_idx == current_node.list_length { return None; } // Null check.
 
-                current_branch = self.pool.get(current_branch.next as usize);
-                continue; // Return to top of loop
+                // Increment state variables
+                current_offset += node_size as i32;
+                branch_idx += 1;
+
+                continue; // Skip back
             }
 
+            // Otherwise, we hit the correct node
+            // Update state
             keychain_idx += 1;
-            if keychain_idx == index.len() { // Reached end of index 
-                return current_node.value.as_ref();
+            if keychain_idx == index.len() { // Reached end of index
+                return test_node.value.as_ref();
             }
 
-            // Not found
-            if current_node.list_head == -1 {
-                return None
+            if test_node.list_head == -1 {
+                return None;
             }
 
-            current_branch = self.pool.get(current_node.list_head as usize);
+            current_node = test_node;
+            branch_idx = 0;
+            current_offset = 0;
         }
     }
 }
@@ -103,21 +97,13 @@ impl StaticTree {
 
 
 // Debugging Implementations
-impl std::fmt::Debug for TreeBranch {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Branch")
-            .field("node", &self.node)
-            .field("next", &self.next)
-            .finish()
-    }
-}
-
 impl<T: Debug, Idx: PartialEq + Debug> std::fmt::Debug for TreeNode<T, Idx> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Node")
             .field("key", &self.key)
             .field("value", &self.value)
-            .field("list_heda", &self.list_head)
+            .field("list_length", &self.list_length)
+            .field("list_head", &self.list_head)
             .finish()
     }
 }

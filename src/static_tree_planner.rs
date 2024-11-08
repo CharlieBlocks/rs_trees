@@ -25,7 +25,7 @@ pub struct StaticTreePlanner<T, Idx: PartialEq + Clone + Default> {
 
 
 /* Implementation */
-impl<T, Idx: PartialEq + Clone + Default> StaticTreePlanner<T, Idx> {
+impl<T, Idx: PartialEq + Clone + Default + std::fmt::Debug> StaticTreePlanner<T, Idx> {
     // New function
     // Returns a new, blank StaticTreePlanner
     pub fn new() -> Self {
@@ -59,71 +59,61 @@ impl<T, Idx: PartialEq + Clone + Default> StaticTreePlanner<T, Idx> {
         let mut stack: VecDeque<CountedTreeNode<T, Idx>> = VecDeque::new();
         let mut pool_offset: i32 = 0;
         let mut last_branch_offset: i32 = 0;
+        let node_size = std::mem::size_of::<TreeNode<T, Idx>>() as i32;
+        println!("Node Size: {}", node_size);
 
 
         // Push root node to stack
         let mut root = self.map.root();
         root.visited = true;
-        root.node_offset = -(std::mem::size_of::<TreeNode<T, Idx>>() as i32);
+        root.list_offset = node_size;
         stack.push_back(root);
 
 
-        // Write implicit node
+        // Node -> Node, Node
+        //          |
+        //          |-------- Node, Node
+
+        // Write root node
+        let node0 = tree.raw().get_mut::<TreeNode<T, Idx>>(0);
+        node0.list_length = stack.get(0).unwrap().nodes.len() as i32;
+        node0.list_head = node_size;
+        pool_offset = node_size;
         for i in 0..stack.get(0).unwrap().nodes.len() {
-            let branch = tree.raw().get_mut::<TreeBranch>(pool_offset as usize);
-            // Zero for safety
-            branch.node = -1;
-            branch.next = -1;
+            let sub_node = &mut stack.get_mut(0).unwrap().nodes[i];
+            let branch = tree.raw().get_mut::<TreeNode<T, Idx>>(pool_offset as usize);
 
-            if i > 0 {
-                tree.raw().get_mut::<TreeBranch>((pool_offset - TREE_BRANCH_SIZE) as usize).next = pool_offset;
-            }
+            branch.key          = sub_node.key.clone();
+            branch.value        = sub_node.value.take();
+            branch.list_length  = sub_node.nodes.len() as i32;
+            branch.list_head    = -1;
+            // sub_node.node_offset = pool_offset;
 
-            pool_offset += TREE_BRANCH_SIZE as i32;
+            pool_offset += node_size;
         }
-
         
         // Loop while there are nodes in the stack
         while let Some(mut node) = stack.pop_back() {
 
+            // Branches need creating
             if !node.visited {
-                // Get a reference to the node in the DynamicPool of the static tree
-                let pool_node = tree.raw().get_mut::<TreeNode<T, Idx>>(pool_offset as usize);
+                // Set previous TreeNode::list_head value
+                node.list_offset = pool_offset;
+                tree.raw().get_mut::<TreeNode<T, Idx>>(last_branch_offset as usize).list_head = pool_offset;
 
-                // TODO: Write pool_node.key and pool_node.value
-                node.node_offset = pool_offset; // Write the offset of the node for future reference
-                pool_node.key = node.key.clone();
-                pool_node.value = node.value.take();
-
-                // Get the parent branch and set the node it points to
-                tree.raw().get_mut::<TreeBranch>(last_branch_offset as usize).node = pool_offset;
-                pool_offset += std::mem::size_of::<TreeNode<T, Idx>>() as i32; // Increment pool_offset to the beginning of the next branch
-
-                // Set branch head if children exist
-                pool_node.list_head = if node.nodes.len() > 0 { pool_offset } else { -1 };
-
-
-                // Build branches
                 for i in 0..node.nodes.len() {
-                    let branch = tree.raw().get_mut::<TreeBranch>(pool_offset as usize);
+                    let branch = tree.raw().get_mut::<TreeNode<T, Idx>>(pool_offset as usize);
 
-                    // "Zero" branch
-                    branch.node = -1; 
-                    branch.next = -1;
+                    branch.key          = node.nodes[i].key.clone();
+                    branch.value        = node.nodes[i].value.take();
+                    branch.list_length  = node.nodes[i].nodes.len() as i32;
+                    branch.list_head    = -1;
 
-                    // If i > 0 we can reference the previous node to set the .next attribute
-                    if i > 0 {
-                        tree.raw().get_mut::<TreeBranch>((pool_offset - TREE_BRANCH_SIZE) as usize).next = pool_offset;
-                    }
-
-                    // Increment pool_offset
-                    pool_offset += TREE_BRANCH_SIZE as i32;
+                    pool_offset += node_size;
                 }
 
-                // Set visited to be true so we don't recreate the node
                 node.visited = true;
             }
-
 
             // Add next child node to stack
             let next_node = match node.consume_next_node() {
@@ -132,8 +122,9 @@ impl<T, Idx: PartialEq + Clone + Default> StaticTreePlanner<T, Idx> {
             };
 
             // Set last branch offset
-            last_branch_offset = node.node_offset + (std::mem::size_of::<TreeNode<T, Idx>>() as i32) + (node.built_sub_nodes * TREE_BRANCH_SIZE);
+            last_branch_offset = node.list_offset + (node_size as i32 * node.built_sub_nodes);
             node.built_sub_nodes += 1;
+
 
             // Stack must have more nodes
             // So we return the item to the stack
@@ -150,7 +141,6 @@ impl<T, Idx: PartialEq + Clone + Default> StaticTreePlanner<T, Idx> {
     /* Helper Methods */
     fn calculate_pool_size(&self) -> usize {
         let mut node_count: usize = 0;
-        let mut branch_count: usize = 0;
 
         let mut open_nodes: VecDeque<&CountedTreeNode<T, Idx>> = VecDeque::new();
         open_nodes.push_back(self.map.root_ref());
@@ -162,7 +152,6 @@ impl<T, Idx: PartialEq + Clone + Default> StaticTreePlanner<T, Idx> {
 
             // Add node and branches
             node_count += 1;
-            branch_count += node.nodes.len();
 
             // Push back sub-nodes
             for child_node in &node.nodes {
@@ -170,7 +159,8 @@ impl<T, Idx: PartialEq + Clone + Default> StaticTreePlanner<T, Idx> {
             }
         };
 
-        return (node_count * std::mem::size_of::<TreeNode<T, Idx>>()) + (branch_count * std::mem::size_of::<TreeBranch>());
+        println!("Calcultaed node count: {}", node_count);
+        return node_count * std::mem::size_of::<TreeNode<T, Idx>>();
 
     }
 

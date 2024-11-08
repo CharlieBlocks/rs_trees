@@ -3,8 +3,9 @@ mod dynamic_array;
 mod static_tree;
 mod counted_tree_map;
 mod static_tree_planner;
-use tree_map::*;
+use tree_map::TreeMap;
 use static_tree_planner::StaticTreePlanner;
+use static_tree::{StaticTree, TreeNode};
 
 use std::time::Instant;
 use std::hash::Hash;
@@ -31,20 +32,23 @@ fn main() {
     // Basic Tree
     let mut map: TreeMap<i32, &str> = TreeMap::new();
     map.insert(vec!["a", "b", "c"].as_slice(), 1);
-    map.insert(vec!["a", "b", "d"].as_slice(), 2);
+    map.insert(vec!["a", "b", "d", "e", "f", "g", "h"].as_slice(), 2);
     map.insert(vec!["e", "f"].as_slice(), 3);
 
 
     // Static Tree
-    let mut builder: StaticTreePlanner<i32, i32> = StaticTreePlanner::new();
-    builder = builder.add(hash_vec(vec!["a", "b", "c"].as_slice()).as_slice(), 1)
-        .add(hash_vec(vec!["a", "b", "d"].as_slice()).as_slice(), 2)
-        .add(hash_vec(vec!["e", "f"].as_slice()).as_slice(), 3);
+    let mut builder: StaticTreePlanner<i32, &str> = StaticTreePlanner::new();
+    builder = builder
+        .add(vec!["a", "b", "c"].as_slice(), 1)
+        .add(vec!["a", "b", "d", "e", "f", "g", "h"].as_slice(), 2)
+        .add(vec!["e", "f"].as_slice(), 3);
     let stree = builder.compile();
 
 
-    let lookup_index = vec!["a", "b", "c"];
-    let hashed_index = hash_vec(lookup_index.as_slice());
+    // let lookup_index = vec!["a", "b", "d", "e", "f", "g", "h"];
+    // let lookup_index = vec!["a", "b", "c"];
+    let lookup_index = vec!["e", "f"];
+
 
     println!("Benchmarking...");
     println!("Basic map ({} iterations)", BENCHMARK_IT);

@@ -15,7 +15,7 @@ pub struct CountedTreeNode<T, Idx: PartialEq + Clone> {
     idx_counts: i32,
     pub built_sub_nodes: i32,
     pub visited: bool,
-    pub node_offset: i32,
+    pub list_offset: i32,
 
     pub nodes: Vec<CountedTreeNode<T, Idx>>
 }
@@ -46,7 +46,7 @@ impl<T, Idx: PartialEq + Clone> CountedTreeNode<T, Idx> {
                     idx_counts: 0,
                     built_sub_nodes: 0,
                     visited: false,
-                    node_offset: -1,
+                    list_offset: -1,
                     nodes: vec!()
                 };
 
@@ -67,7 +67,11 @@ impl<T, Idx: PartialEq + Clone> CountedTreeNode<T, Idx> {
     }
 
     pub fn consume_next_node(&mut self) -> Option<CountedTreeNode<T, Idx>> {
-        return self.nodes.pop();
+        if self.nodes.len() == 0 {
+            return None;
+        } else {
+            return Some(self.nodes.remove(0));
+        }
     }
 
 
@@ -135,7 +139,7 @@ impl<T, Idx: PartialEq + Clone + Default> CountedTreeMap<T, Idx> {
                 built_sub_nodes: 0,
                 idx_counts: 0,
                 visited: false,
-                node_offset: -1,
+                list_offset: -1,
                 nodes: vec!()
             })
         }

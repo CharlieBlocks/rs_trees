@@ -74,6 +74,7 @@ impl<T, Idx: PartialEq + Clone + Default> StaticTreePlanner<T, Idx> {
 
         // Write root node
         let node0 = tree.raw().get_mut::<TreeNode<T, Idx>>(0);
+        node0.key = None;
         node0.list_length = stack.get(0).unwrap().nodes.len() as i32;
         node0.list_head = node_size;
 
@@ -82,7 +83,7 @@ impl<T, Idx: PartialEq + Clone + Default> StaticTreePlanner<T, Idx> {
             let sub_node = &mut stack.get_mut(0).unwrap().nodes[i];
             let branch = tree.raw().get_mut::<TreeNode<T, Idx>>(pool_offset as usize);
 
-            branch.key          = sub_node.key.clone();
+            branch.key          = Some(sub_node.key.clone());
             branch.value        = sub_node.value.take();
             branch.list_length  = sub_node.nodes.len() as i32;
             branch.list_head    = -1;
@@ -110,7 +111,7 @@ impl<T, Idx: PartialEq + Clone + Default> StaticTreePlanner<T, Idx> {
                     let branch = tree.raw().get_mut::<TreeNode<T, Idx>>(pool_offset as usize);
 
                     // Initialise branch values
-                    branch.key          = node.nodes[i].key.clone();
+                    branch.key          = Some(node.nodes[i].key.clone());
                     branch.value        = node.nodes[i].value.take();
                     branch.list_length  = node.nodes[i].nodes.len() as i32;
                     branch.list_head    = -1;
@@ -171,7 +172,6 @@ impl<T, Idx: PartialEq + Clone + Default> StaticTreePlanner<T, Idx> {
             }
         };
 
-        println!("Calcultaed node count: {}", node_count);
         return node_count * std::mem::size_of::<TreeNode<T, Idx>>();
 
     }
@@ -192,7 +192,7 @@ mod tests {
     use super::*;
 
     // Helper function for checking that a given TreeNode is valid
-    fn check_node(node: &TreeNode<i32, &str>, key: &str, value: Option<i32>, list_length: i32, list_head: i32) -> bool {
+    fn check_node(node: &TreeNode<i32, &str>, key: Option<&str>, value: Option<i32>, list_length: i32, list_head: i32) -> bool {
         return node.key == key &&
             node.value == value &&
             node.list_length == list_length &&
@@ -222,22 +222,22 @@ mod tests {
         // Just the underlying memory structure
 
         // Root Node
-        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(0), "", None, 2, 32));
+        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(0), None, None, 2, 32));
 
         // "a"
-        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(32), "a", None, 1, 96));
+        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(32), Some("a"), None, 1, 96));
 
         // "e"
-        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(64), "e", Some(3), 0, -1));
+        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(64), Some("e"), Some(3), 0, -1));
         
         // "b"
-        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(96), "b", None, 2, 128));
+        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(96), Some("b"), None, 2, 128));
 
         // "c"
-        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(128), "c", Some(1), 0, -1));
+        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(128), Some("c"), Some(1), 0, -1));
 
         // "d"
-        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(160), "d", Some(2), 0, -1));
+        assert!(check_node(tree.raw().get::<TreeNode<i32, &str>>(160), Some("d"), Some(2), 0, -1));
     }
 
 }

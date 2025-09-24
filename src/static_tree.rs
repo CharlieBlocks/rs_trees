@@ -8,16 +8,19 @@ Summary:
 
     Due to the continous nature of StaticTree it is recommended to store as little data as possible in the actual tree structure
 */
-
 use crate::dynamic_array::DynamicArray;
-use std::{alloc::Layout, fmt::Debug};
+use std::alloc::Layout;
+
+#[cfg(debug_assertions)]
+use std::fmt::Debug;
+
 
 // TreeOffset is an i32 index into the DynamicArray structure in the StaticTree
 // It is used to specify the offset to find an item
 type TreeOffset = i32;
 
 pub struct TreeNode<T, Idx: PartialEq> {
-    pub key: Idx,
+    pub key: Option<Idx>,
     pub value: Option<T>,
     pub list_length: i32,
     pub list_head: TreeOffset
@@ -66,7 +69,7 @@ impl StaticTree {
 
             // Check if node matches index
             // If not then we continue to the next node
-            if test_node.key != index[keychain_idx] {
+            if test_node.key.as_ref() != Some(&index[keychain_idx]) {
                 if branch_idx == current_node.list_length { return None; } // Null check.
 
                 // Increment state variables

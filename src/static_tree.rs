@@ -10,7 +10,11 @@ Summary:
 */
 
 use crate::dynamic_array::DynamicArray;
-use std::{alloc::Layout, fmt::Debug};
+use std::alloc::Layout;
+
+#[cfg(debug_assertions)]
+use std::fmt::Debug;
+
 
 // TreeOffset is an i32 index into the DynamicArray structure in the StaticTree
 // It is used to specify the offset to find an item

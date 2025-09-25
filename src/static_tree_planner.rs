@@ -75,6 +75,7 @@ impl<T, Idx: PartialEq + Clone + Default> StaticTreePlanner<T, Idx> {
         // Write root node
         let node0 = tree.raw().get_mut::<TreeNode<T, Idx>>(0);
         node0.key = None;
+        node0.value = None;
         node0.list_length = stack.get(0).unwrap().nodes.len() as i32;
         node0.list_head = node_size;
 
